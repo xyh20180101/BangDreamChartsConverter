@@ -1,0 +1,169 @@
+﻿@section Style{
+    <style>
+        .el-button + .el-button {
+            margin-left: 0;
+        }
+
+        .el-divider--horizontal {
+            margin: 0;
+        }
+    </style>
+}
+<div style="display: flex; flex-direction: column" v-loading="loading">
+    <div style="display: flex">
+        <el-upload
+            :show-file-list="false"
+            accept=".txt,.json"
+            :auto-upload="false"
+            :on-change="upload"
+            action="/">
+            <el-button style="margin-right: 10px; margin-bottom: 10px" type="primary" size="small"><i class="el-icon-folder el-icon--left"></i>打开</el-button>
+        </el-upload>
+        <el-button style="margin-bottom: 10px" size="small" @@click="convertPost.InputText=''">清除</el-button>
+    </div>
+    <el-input type="textarea"
+              style="width: 100%;margin-bottom:10px"
+              :autosize="{ minRows: 10,maxRows:10}"
+              placeholder="请输入内容"
+              v-model="convertPost.InputText">
+    </el-input>
+    <div style="display: flex; width: 100%;align-items: center">
+        <el-select size="small" v-model="convertPost.From" placeholder="请选择">
+            <el-option v-for="(value,key) in ConvertTypeFrom"
+                       :key="value"
+                       :label="key"
+                       :value="value">
+            </el-option>
+        </el-select>
+        <span style="font-size: 14px; margin: 0 10px;min-width: 42px">转换至</span>
+        <el-select size="small" v-model="convertPost.To" placeholder="请选择">
+            <el-option v-for="(value,key) in ConvertTypeTo"
+                       :key="value"
+                       :label="key"
+                       :value="value">
+            </el-option>
+        </el-select>
+    </div>
+    <div>
+        <el-checkbox style="margin: 10px 0" v-model="convertPost.CheckRepeat">检查重叠note</el-checkbox>
+    </div>
+    <div>
+        <el-button @@click="convert()" style="margin-right: 10px; margin-bottom: 10px;width: 100%" type="primary" size="small">转换</el-button>
+    </div>
+    <el-divider></el-divider>
+    <div style="display: flex">
+        <el-button v-clipboard:copy="outputText" v-clipboard:success="onCopy" v-clipboard:error="onError" style="margin:10px 10px 10px 0" type="success" size="small"><i class="el-icon-document-copy el-icon--left"></i>复制</el-button>
+        <el-button @@click="saveText" style="margin:10px 10px 10px 0" type="success" size="small"><i class="el-icon-download el-icon--left"></i>保存</el-button>
+    </div>
+    <el-input type="textarea"
+              style="width: 100%;margin-bottom:10px"
+              :autosize="{ minRows: 10,maxRows:10}"
+              placeholder="请输入内容"
+              v-model="outputText">
+    </el-input>
+</div>
+
+@section Scripts
+{
+    <script>
+        var vue = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    convertPost: {
+                        InputText: '',
+                        From: 0,
+                        To: 0,
+                        CheckRepeat: true,
+                        Delay: 0
+                    },
+
+                    ConvertTypeFrom: {
+                        'Bestdori': 0,
+                        'BangBangBoom': 1,
+                        'BangSimulator': 2,
+                        'Bandori': 3
+                    },
+
+                    ConvertTypeTo: {
+                        'Bestdori': 0,
+                        'BangBangBoom': 1,
+                        'BangSimulator': 2,
+                        'BangCraft': 3,
+                        'BMS': 4,
+                    },
+
+                    outputText: '',
+
+                    loading: false,
+                }
+            },
+            beforeCreate() {
+                FileReader.prototype.reading = function({ encode } = pms) {
+                    let bytes = new Uint8Array(this.result);
+                    let text = new TextDecoder(encode || 'UTF-8').decode(bytes);
+                    return text;
+                };
+                FileReader.prototype.readAsBinaryString = function(f) {
+                    if (!this.onload)
+                        this.onload = e => {
+                            let rs = this.reading();
+                            console.log(rs);
+                        };
+                    this.readAsArrayBuffer(f);
+                };
+            },
+            mounted() {
+            },
+            methods: {
+                convert() {
+                    var current = this;
+                    current.loading = true;
+                    axios.post('/api/Index/Convert', current.convertPost).then(
+                        function(response) {
+                            current.loading = false;
+                            if (response.data.Success) {
+                                current.outputText = response.data.Data;
+                            } else {
+                                current.outputText = '';
+                                current.$message.error(response.data.ErrorInfo.Message);
+                            }
+                        }).catch(function(error) {
+                        current.$message.error(error);
+                    });
+                },
+                upload(file) {
+                    var current = this;
+                    let reader = new FileReader();
+                    reader.onload = e => {
+                        let content = reader.reading({ encode: 'GBK' });
+                        current.convertPost.InputText = content;
+                    };
+                    reader.readAsBinaryString(file.raw);
+                },
+                saveText() {
+                    var ele = document.createElement('a');
+                    ele.download = "myChart.txt";
+                    ele.style.display = "none";
+                    var blob = new Blob([this.outputText]);
+                    ele.href = URL.createObjectURL(blob);
+                    document.body.appendChild(ele);
+                    ele.click();
+                    document.body.removeChild(ele);
+                },
+                onCopy() {
+                    this.$message({
+                        message: '复制成功',
+                        type: 'success'
+                    });
+                },
+                onError() {
+                    this.$message({
+                        message: '复制失败',
+                        type: 'error'
+                    });
+                }
+            }
+        });
+    </script>
+}
