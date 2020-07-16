@@ -33,6 +33,7 @@ namespace BangDreamChartsConverter.Services
             {
                 throw new FormatErrorException(e.Message);
             }
+            if (checkRepeat) CheckRepeat(result);
             return result;
         }
 
@@ -40,15 +41,15 @@ namespace BangDreamChartsConverter.Services
         {
             try
             {
-                switch (convertTypeTo)
+                return convertTypeTo switch
                 {
-                    case ConvertTypeTo.Bestdori: return ToBestdoriScore(defaultChart);
-                    case ConvertTypeTo.BangSimulator: return ToBangSimulatorScore(defaultChart);
-                    case ConvertTypeTo.BangBangBoom: return ToBangbangboomScore(defaultChart);
-                    case ConvertTypeTo.BangCraft: return ToBangCraftScore(defaultChart);
-                    case ConvertTypeTo.BMS: return ToBMS(defaultChart);
-                }
-                throw new Exception();
+                    ConvertTypeTo.Bestdori => ToBestdoriScore(defaultChart),
+                    ConvertTypeTo.BangSimulator => ToBangSimulatorScore(defaultChart),
+                    ConvertTypeTo.BangBangBoom => ToBangbangboomScore(defaultChart),
+                    ConvertTypeTo.BangCraft => ToBangCraftScore(defaultChart),
+                    ConvertTypeTo.BMS => ToBMS(defaultChart),
+                    _ => throw new Exception(),
+                };
             }
             catch (Exception e)
             {
@@ -311,7 +312,7 @@ namespace BangDreamChartsConverter.Services
                         });
                     }
 
-                    var endTimeAndTrack = noteInfo[noteInfo.Length - 1].Split(':');
+                    var endTimeAndTrack = noteInfo[^1].Split(':');
                     notes.Add(new DefaultNote
                     {
                         NoteType = isA ? DefaultNoteType.滑条a_结束 : DefaultNoteType.滑条b_结束,
@@ -343,7 +344,7 @@ namespace BangDreamChartsConverter.Services
                         });
                     }
 
-                    var endTimeAndTrack = noteInfo[noteInfo.Length - 1].Split(':');
+                    var endTimeAndTrack = noteInfo[^1].Split(':');
                     notes.Add(new DefaultNote
                     {
                         NoteType = isA ? DefaultNoteType.滑条a_粉键结束 : DefaultNoteType.滑条b_粉键结束,
@@ -1421,12 +1422,10 @@ namespace BangDreamChartsConverter.Services
         {
             var repeatList = defaultScore.Notes.GroupBy(p => new { p.Time, p.Track }).Where(p => p.Count() > 1).ToList();
 
-            var str = "位于\r\n";
-            foreach (var i in repeatList) str += $"Time:{i.Key.Time} Track:{i.Key.Track} NoteCount:{i.Count()}\r\n";
+            var str = "检测到重叠note，位于\r\n";
+            foreach (var i in repeatList) str += $"Time:{i.Key.Time} Track:{i.Key.Track} NoteCount:{i.Count()}";
 
-            str += "转换过程不作处理,请在原谱面文件上自行修改";
-
-            if (repeatList.Count != 0);
+            if (repeatList.Count != 0)throw new Exception(str);
         }
 
         /// <summary>

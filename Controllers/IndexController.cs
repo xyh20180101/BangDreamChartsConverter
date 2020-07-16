@@ -12,7 +12,7 @@ namespace BangDreamChartsConverter.Controllers
 {
     public class IndexController:BaseController
     {
-        private IConvertService _convertService;
+        private readonly IConvertService _convertService;
 
         public IndexController(IConvertService convertService)
         {
@@ -36,11 +36,11 @@ namespace BangDreamChartsConverter.Controllers
                     convertPost.CheckRepeat, convertPost.Delay);
                 return new AjaxResponse<string>(_convertService.CovertDefaultChart(defaultChart, convertPost.To));
             }
-            catch (FormatErrorException e)
+            catch (FormatErrorException)
             {
                 return new AjaxResponse<string>(new ErrorInfo("谱面转换出错，请确认格式是否正确"));
             }
-            catch (OutputErrorException e)
+            catch (OutputErrorException)
             {
                 return new AjaxResponse<string>(new ErrorInfo("谱面导出时发生错误"));
             }
